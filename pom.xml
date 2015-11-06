@@ -33,6 +33,12 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <properties>
+            <nd4j.version>0.4-rc3.6</nd4j.version>
+            <dl4j.version>	0.4-rc3.6 </dl4j.version>
+            <canova.version>0.0.0.12</canova.version>
+            <jackson.version>2.5.1</jackson.version>
+        </properties>
     </properties>
 
     <build>
@@ -107,6 +113,23 @@
             <artifactId>stanford-corenlp</artifactId>
             <version>3.5.2</version>
             <classifier>models</classifier>
+        </dependency>
+
+        <!-- Deep learning library -->
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-core</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-nlp</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-jcublas-7.5</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
 
         <!-- Testing  -->
