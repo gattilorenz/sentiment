@@ -33,12 +33,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <properties>
-            <nd4j.version>0.4-rc3.6</nd4j.version>
-            <dl4j.version>	0.4-rc3.6 </dl4j.version>
-            <canova.version>0.0.0.12</canova.version>
-            <jackson.version>2.5.1</jackson.version>
-        </properties>
+        <nd4j.version>0.4-rc3.6</nd4j.version>
+        <dl4j.version>	0.4-rc3.6 </dl4j.version>
+        <canova.version>0.0.0.12</canova.version>
+        <jackson.version>2.5.1</jackson.version>
     </properties>
 
     <build>
@@ -90,6 +88,25 @@
             <version>1.9</version>
         </dependency>
 
+        <!-- Serialization/Deserialization, property reading -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.6.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.6.3</version>
+        </dependency>
+
+        <!-- Dependency Injection -->
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>4.0</version>
+        </dependency>
+
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -113,6 +130,13 @@
             <artifactId>stanford-corenlp</artifactId>
             <version>3.5.2</version>
             <classifier>models</classifier>
+        </dependency>
+
+        <!-- Matrices -->
+        <dependency>
+            <groupId>org.ejml</groupId>
+            <artifactId>all</artifactId>
+            <version>0.28</version>
         </dependency>
 
         <!-- Deep learning library -->

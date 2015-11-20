@@ -1,0 +1,10 @@
+glove.6B.50d:
+  location: http://futuro.media.s3-website.eu-central-1.amazonaws.com/data/glove.6B.50d.gz
+  size: 69239637
+  type: wordvectors
+  compression: GZ
+glove.6B.100d:
+  location: http://futuro.media.s3-website.eu-central-1.amazonaws.com/data/glove.6B.100d.gz
+  size: 134409071
+  type: wordvectors
+  compression: GZ
