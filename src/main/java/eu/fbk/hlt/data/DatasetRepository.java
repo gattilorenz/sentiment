@@ -90,6 +90,8 @@ public class DatasetRepository {
     private Dataset instantiateDataset(DatasetMetaInfo location) throws Exception {
         File source = new File(location.location.toURI());
         Dataset target;
+        logger.info("Starting loading the dataset "+location.name);
+        Stopwatch watch = Stopwatch.start();
         switch (location.type) {
             case "wordvectors":
                 target = new WordVectors(location);
@@ -101,7 +103,7 @@ public class DatasetRepository {
                 throw new Exception("The type \""+location.type+"\" is not supported yet");
         }
 
-        logger.info("Loaded dataset \""+location.name+"\"");
+        logger.info("Loaded dataset \""+location.name+"\". "+(watch.click()/1000)+"s elapsed");
         return target;
     }
 
