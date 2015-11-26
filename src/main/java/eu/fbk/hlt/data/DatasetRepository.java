@@ -94,6 +94,9 @@ public class DatasetRepository {
             case "wordvectors":
                 target = new WordVectors(location);
                 break;
+            case "labeledsentences":
+                target = new LabeledSentences(location);
+                break;
             default:
                 throw new Exception("The type \""+location.type+"\" is not supported yet");
         }

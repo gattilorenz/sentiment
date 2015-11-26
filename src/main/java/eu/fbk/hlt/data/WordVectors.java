@@ -70,6 +70,7 @@ public class WordVectors extends Dataset {
                 wordVectors.put(word, new SimpleMatrix(vector));
             }
 
+            zeroes = new SimpleMatrix(dim, 1);
             logger.info("Parsed "+wordVectors.size()+" words");
         } catch (IOException e) {
             logger.error("Can't parse the input file: "+e.getClass().getSimpleName()+" "+e.getMessage());
@@ -78,5 +79,9 @@ public class WordVectors extends Dataset {
 
     public SimpleMatrix lookup(String word) {
         return wordVectors.getOrDefault(word, zeroes);
+    }
+
+    public boolean isZeroes(SimpleMatrix matrix) {
+        return matrix.equals(zeroes);
     }
 }

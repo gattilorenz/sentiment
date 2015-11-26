@@ -8,3 +8,8 @@ glove.6B.100d:
   size: 134409071
   type: wordvectors
   compression: GZ
+lorenzo.amazon:
+  location: http://futuro.media.s3-website.eu-central-1.amazonaws.com/data/glove.6B.100d.gz
+  size: 134409071
+  type: labeledsentences
+  compression: GZ
