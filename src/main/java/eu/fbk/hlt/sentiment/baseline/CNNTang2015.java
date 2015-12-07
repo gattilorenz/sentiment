@@ -14,6 +14,10 @@ import eu.fbk.hlt.data.Dataset;
 import eu.fbk.hlt.data.DatasetRepository;
 import eu.fbk.hlt.data.LabeledSentences;
 import eu.fbk.hlt.data.WordVectors;
+import eu.fbk.hlt.sentiment.nn.Pipeline;
+import eu.fbk.hlt.sentiment.nn.duyu.LinearLayer;
+import eu.fbk.hlt.sentiment.nn.duyu.MultiConnectLayer;
+import eu.fbk.hlt.sentiment.nn.duyu.TanhLayer;
 import eu.fbk.hlt.sentiment.util.CLIOptionBuilder;
 import org.apache.commons.cli.*;
 import org.ejml.simple.SimpleMatrix;
@@ -22,8 +26,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -50,6 +56,9 @@ public class CNNTang2015 {
     protected LabeledSentences dataset;
     protected AnnotationPipeline pipeline;
 
+    //Filled with unknown words encountered when debug is turned on
+    private Set<String> unknownWords = new HashSet<>();
+
     /**
      *
      * @param embeddings Pre-computed word-embeddings
@@ -61,21 +70,31 @@ public class CNNTang2015 {
         this.pipeline = pipeline;
     }
 
-    public void start(String target) {
+    private Pipeline buildNeuralNet(int wordDim, int lookupDim) throws Exception {
+        //Create a set of layers for each of the window sizes
+        Pipeline
+        for (int windowSize = 1; windowSize < 3; windowSize++) {
+            LinearLayer linear = new LinearLayer(wordDim * windowSize, lookupDim);
+            TanhLayer tanh = new TanhLayer(lookupDim);
+            Pipeline filter = new Pipeline(linear);
+            filter.after(tanh);
+        }
+    }
+
+    /**
+     * This method is used to debug the embeddings lookup layer
+     * Resolves embeddings for each word and dumps the sentence model to target file
+     *
+     * @param target Target file
+     */
+    public void dumpSentenceModel(File target) {
         LabeledSentences.Sentence sentence;
         int counter = 0;
-        Set<String> unknownWords = new HashSet<>();
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(target))) {
             while ((sentence = dataset.readNext()) != null) {
-                //Annotate sentence
-                Annotation annotation = new Annotation(sentence.sentence);
-                pipeline.annotate(annotation);
+                ArrayList<SimpleMatrix> vectors = sentence2vec(sentence);
                 writer.write(sentence.label);
-                for (CoreLabel token : annotation.get(CoreAnnotations.TokensAnnotation.class)) {
-                    SimpleMatrix vector = embeddings.lookup(token.word());
-                    if (logger.isDebugEnabled() && embeddings.isZeroes(vector)) {
-                        unknownWords.add(token.word());
-                    }
+                for (SimpleMatrix vector : vectors) {
                     for (int i = 0; i < vector.numRows(); i++) {
                         writer.write(' ');
                         writer.write(Double.toString(vector.get(i, 0)));
@@ -90,7 +109,12 @@ public class CNNTang2015 {
         } catch (IOException e) {
             logger.error("Can't open the target file", e);
         }
+    }
 
+    /**
+     * Output the unknown words that system has encountered during analysis
+     */
+    public void outputUnknownWords() {
         //Output unknown words
         if (logger.isDebugEnabled()) {
             StringBuilder builder = new StringBuilder();
@@ -102,7 +126,25 @@ public class CNNTang2015 {
             }
             logger.debug("Unknown words: "+builder.toString());
         }
+    }
 
+    /**
+     * Annotate sentence
+     * @param sentence Sentence as returned by the dataset
+     * @return Vector representation of the sentence
+     */
+    private ArrayList<SimpleMatrix> sentence2vec(LabeledSentences.Sentence sentence) {
+        Annotation annotation = new Annotation(sentence.sentence);
+        pipeline.annotate(annotation);
+        ArrayList<SimpleMatrix> result = new ArrayList<>();
+        for (CoreLabel token : annotation.get(CoreAnnotations.TokensAnnotation.class)) {
+            SimpleMatrix vector = embeddings.lookup(token.word());
+            result.add(vector);
+            if (logger.isDebugEnabled() && embeddings.isZeroes(vector)) {
+                unknownWords.add(token.word());
+            }
+        }
+        return result;
     }
 
     /**
@@ -117,7 +159,8 @@ public class CNNTang2015 {
         Parameters params = new Parameters(args);
         Injector injector = Guice.createInjector(new DatasetProvider());
         CNNTang2015 project = injector.getInstance(CNNTang2015.class);
-        project.start(params.target);
+        project.dumpSentenceModel(new File(params.target));
+        project.outputUnknownWords();
     }
 
     public static class DatasetProvider extends AbstractModule {

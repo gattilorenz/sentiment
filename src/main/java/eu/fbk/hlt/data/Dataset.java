@@ -22,7 +22,7 @@ public abstract class Dataset {
 
     public abstract void parse();
 
-protected LineNumberReader getReader() throws IOException {
+    protected LineNumberReader getReader() throws IOException {
         InputStream stream = new FileInputStream(source);
         switch (this.info.compression) {
             case GZ:
