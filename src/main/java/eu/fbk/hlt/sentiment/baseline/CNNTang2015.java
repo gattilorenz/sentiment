@@ -72,13 +72,14 @@ public class CNNTang2015 {
 
     private Pipeline buildNeuralNet(int wordDim, int lookupDim) throws Exception {
         //Create a set of layers for each of the window sizes
-        Pipeline
+        //Pipeline
         for (int windowSize = 1; windowSize < 3; windowSize++) {
             LinearLayer linear = new LinearLayer(wordDim * windowSize, lookupDim);
             TanhLayer tanh = new TanhLayer(lookupDim);
             Pipeline filter = new Pipeline(linear);
             filter.after(tanh);
         }
+        return null;
     }
 
     /**

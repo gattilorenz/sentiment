@@ -2,15 +2,15 @@ package eu.fbk.hlt.data;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.oracle.tools.packager.IOUtils;
 import eu.fbk.hlt.sentiment.util.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,7 +76,7 @@ public class DatasetRepository {
             logger.info(msg.toString());
             Stopwatch watch = Stopwatch.start();
             File finalLocation = location.getOfflineLocation(conf.getStorage());
-            IOUtils.copyFromURL(location.location, finalLocation);
+            copyFromURL(location.location, finalLocation);
             location.updateOffline(finalLocation);
             if (!location.isOffline) {
                 logger.info("Download failed. "+(watch.click()/1000)+"s elapsed");
@@ -107,5 +107,23 @@ public class DatasetRepository {
         return target;
     }
 
-
+    public static void copyFromURL(URL location, File file) throws IOException {
+        if (location == null) {
+            throw new IOException("Missing input resource!");
+        }
+        if (file.exists()) {
+            file.delete();
+        }
+        InputStream in = location.openStream();
+        FileOutputStream out = new FileOutputStream(file);
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = in.read(buffer)) != -1) {
+            out.write(buffer, 0, len);
+        }
+        out.close();
+        in.close();
+        file.setReadOnly();
+        file.setReadable(true, false);
+    }
 }
