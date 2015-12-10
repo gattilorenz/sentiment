@@ -68,6 +68,18 @@ public class Pipeline {
         clearGrad();
     }
 
+    public Pipeline after(Pipeline pipeline) throws Exception {
+        layer.link(pipeline.getInputLayer());
+        pipelines.add(pipeline);
+        return pipeline;
+    }
+
+    public Pipeline after(Pipeline pipeline, int socket) throws Exception {
+        layer.link(pipeline.getInputLayer(), socket);
+        pipelines.add(pipeline);
+        return pipeline;
+    }
+
     public Pipeline after(NNInterface layer) throws Exception {
         layer.link(layer);
         Pipeline next = new Pipeline(layer);
@@ -80,6 +92,18 @@ public class Pipeline {
         Pipeline next = new Pipeline(layer);
         pipelines.add(next);
         return next;
+    }
+
+    public Pipeline link(Pipeline pipeline) throws Exception {
+        layer.link(pipeline.getInputLayer());
+        pipelines.add(pipeline);
+        return this;
+    }
+
+    public Pipeline link(Pipeline pipeline, int socket) throws Exception {
+        layer.link(pipeline.getInputLayer(), socket);
+        pipelines.add(pipeline);
+        return this;
     }
 
     public Pipeline link(NNInterface layer) throws Exception {
