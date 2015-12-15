@@ -24,7 +24,7 @@ public class ConvolutionLayer implements NNInterface {
     protected int windowDim;
     protected int outputDim;
     protected List<Pipeline> layers = new ArrayList<>();
-    protected NNInterface lastLayer = new AverageLayer(0, 0);
+    protected NNInterface lastLayer;
     protected NNInterface nextLayer;
     protected int nextId;
 
@@ -65,6 +65,8 @@ public class ConvolutionLayer implements NNInterface {
 
     @Override
     public void forward() {
+        assert layers.size() > 0;
+        layers.forEach(value -> value.forward());
     }
 
     private void generateLayers(int inputDim) throws Exception {
@@ -111,7 +113,9 @@ public class ConvolutionLayer implements NNInterface {
     public void link(NNInterface nextLayer, int id) throws Exception {
         this.nextLayer = nextLayer;
         this.nextId = id;
-        lastLayer.link(nextLayer, nextId);
+        if (lastLayer != null) {
+            lastLayer.link(nextLayer, nextId);
+        }
     }
 
     @Override

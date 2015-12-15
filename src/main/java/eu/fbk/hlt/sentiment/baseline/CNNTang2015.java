@@ -14,10 +14,9 @@ import eu.fbk.hlt.data.Dataset;
 import eu.fbk.hlt.data.DatasetRepository;
 import eu.fbk.hlt.data.LabeledSentences;
 import eu.fbk.hlt.data.WordVectors;
+import eu.fbk.hlt.sentiment.nn.ConvolutionLayer;
 import eu.fbk.hlt.sentiment.nn.Pipeline;
-import eu.fbk.hlt.sentiment.nn.duyu.LinearLayer;
-import eu.fbk.hlt.sentiment.nn.duyu.MultiConnectLayer;
-import eu.fbk.hlt.sentiment.nn.duyu.TanhLayer;
+import eu.fbk.hlt.sentiment.nn.duyu.*;
 import eu.fbk.hlt.sentiment.util.CLIOptionBuilder;
 import org.apache.commons.cli.*;
 import org.ejml.simple.SimpleMatrix;
@@ -29,6 +28,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.channels.Pipe;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Properties;
@@ -55,6 +55,8 @@ public class CNNTang2015 {
     protected WordVectors embeddings;
     protected LabeledSentences dataset;
     protected AnnotationPipeline pipeline;
+    protected ArrayList<Pipeline> net;
+    protected Pipeline softmax;
 
     //Filled with unknown words encountered when debug is turned on
     private Set<String> unknownWords = new HashSet<>();
@@ -64,22 +66,89 @@ public class CNNTang2015 {
      * @param embeddings Pre-computed word-embeddings
      */
     @Inject
-    public CNNTang2015(WordVectors embeddings, LabeledSentences dataset, AnnotationPipeline pipeline) {
+    public CNNTang2015(WordVectors embeddings, LabeledSentences dataset, AnnotationPipeline pipeline) throws Exception {
         this.embeddings = embeddings;
         this.dataset = dataset;
         this.pipeline = pipeline;
+        buildNeuralNet(embeddings.getDim(), embeddings.getDim());
     }
 
-    private Pipeline buildNeuralNet(int wordDim, int lookupDim) throws Exception {
+    private void buildNeuralNet(int wordDim, int lookupDim) throws Exception {
+        this.net = new ArrayList<>();
         //Create a set of layers for each of the window sizes
-        //Pipeline
+        Pipeline connect = new Pipeline(new MultiConnectLayer(new int[]{lookupDim, lookupDim, lookupDim}));
+        softmax = connect
+            .after(new AverageLayer(lookupDim*3, lookupDim))
+            .after(new LinearLayer(lookupDim, 5))
+            .after(new SoftmaxLayer(5));
+
         for (int windowSize = 1; windowSize < 3; windowSize++) {
-            LinearLayer linear = new LinearLayer(wordDim * windowSize, lookupDim);
-            TanhLayer tanh = new TanhLayer(lookupDim);
-            Pipeline filter = new Pipeline(linear);
-            filter.after(tanh);
+            Pipeline net = new Pipeline(new ConvolutionLayer(windowSize, wordDim, lookupDim));
+            net.link(connect, windowSize-1);
+            this.net.add(net);
         }
-        return null;
+    }
+
+    public void train() {
+        LabeledSentences.Sentence sentence;
+        int counter = 0;
+        double lossV = 0.0;
+        final double threshold = 0.001;
+        SoftmaxLayer layer = (SoftmaxLayer) softmax.getInputLayer();
+        while ((sentence = dataset.readNext()) != null) {
+            int label = Integer.parseInt(sentence.label);
+            ArrayList<SimpleMatrix> vectors = sentence2vec(sentence);
+            setInput(vectors);
+            for (Pipeline conv : net) {
+                conv.forward();
+            }
+            softmax.getInputLayer();
+            lossV += -Math.log(layer.output[label]);
+            for (int i = 0; i < layer.outputG.length; i++) {
+                layer.outputG[i] = 0.0;
+            }
+
+            if (layer.output[label] < threshold) {
+                layer.outputG[label] = 1.0 / threshold;
+            } else {
+                layer.outputG[label] = 1.0 / layer.output[label];
+            }
+
+            for (Pipeline conv : net) {
+                conv.backward();
+            }
+
+            for (Pipeline conv : net) {
+                conv.update(0.03);
+            }
+
+            for (Pipeline conv : net) {
+                conv.clearGrad();
+            }
+
+            if (++counter % 1000 == 0) {
+                logger.info(counter+" sentences processed");
+                logger.info("lossV/lossC = "+lossV+"/"+(lossV/counter));
+            }
+        }
+    }
+
+    private void setInput(ArrayList<SimpleMatrix> input) {
+        assert input.size() > 0;
+        assert input.get(0).numRows() > 1;
+        assert input.get(0).numCols() == 1;
+
+        int dim = input.get(0).numRows();
+        double[] rawInput = new double[dim*input.size()];
+        for (int i = 0; i < input.size(); i++) {
+            for (int j = 0; j < dim; j++) {
+                rawInput[j+i*dim] = input.get(i).get(j, 0);
+            }
+        }
+        for (Pipeline conv : net) {
+            ConvolutionLayer layer = (ConvolutionLayer) conv.getInputLayer();
+            layer.setInput(rawInput);
+        }
     }
 
     /**
@@ -160,8 +229,9 @@ public class CNNTang2015 {
         Parameters params = new Parameters(args);
         Injector injector = Guice.createInjector(new DatasetProvider());
         CNNTang2015 project = injector.getInstance(CNNTang2015.class);
-        project.dumpSentenceModel(new File(params.target));
-        project.outputUnknownWords();
+        //project.dumpSentenceModel(new File(params.target));
+        //project.outputUnknownWords();
+        project.train();
     }
 
     public static class DatasetProvider extends AbstractModule {

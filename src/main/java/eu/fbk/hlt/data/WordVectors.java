@@ -84,4 +84,8 @@ public class WordVectors extends Dataset {
     public boolean isZeroes(SimpleMatrix matrix) {
         return matrix.equals(zeroes);
     }
+
+    public int getDim() {
+        return dim;
+    }
 }

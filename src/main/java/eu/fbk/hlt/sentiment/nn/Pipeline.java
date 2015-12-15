@@ -81,14 +81,14 @@ public class Pipeline {
     }
 
     public Pipeline after(NNInterface layer) throws Exception {
-        layer.link(layer);
+        this.layer.link(layer);
         Pipeline next = new Pipeline(layer);
         pipelines.add(next);
         return next;
     }
 
     public Pipeline after(NNInterface layer, int socket) throws Exception {
-        layer.link(layer, socket);
+        this.layer.link(layer, socket);
         Pipeline next = new Pipeline(layer);
         pipelines.add(next);
         return next;
@@ -107,13 +107,13 @@ public class Pipeline {
     }
 
     public Pipeline link(NNInterface layer) throws Exception {
-        layer.link(layer);
+        this.layer.link(layer);
         pipelines.add(new Pipeline(layer));
         return this;
     }
 
     public Pipeline link(NNInterface layer, int socket) throws Exception {
-        layer.link(layer, socket);
+        this.layer.link(layer, socket);
         pipelines.add(new Pipeline(layer));
         return this;
     }
