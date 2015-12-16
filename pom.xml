@@ -160,6 +160,11 @@
             <artifactId>nd4j-jcublas-7.5</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-x86</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
 
         <!-- Testing  -->
         <dependency>
