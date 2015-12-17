@@ -33,8 +33,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>0.4-rc3.6</nd4j.version>
-        <dl4j.version>	0.4-rc3.6 </dl4j.version>
+        <nd4j.version>0.4-rc3.7</nd4j.version>
+        <dl4j.version>	0.4-rc3.7 </dl4j.version>
         <canova.version>0.0.0.12</canova.version>
         <jackson.version>2.5.1</jackson.version>
     </properties>
@@ -114,14 +114,14 @@
 
         <!-- Logging -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.12</version>
-        </dependency>
-        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>1.7.12</version>
         </dependency>
 
         <!-- Stanford NLP -->
@@ -156,6 +156,11 @@
             <version>${dl4j.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jcublas-7.5</artifactId>
             <version>${nd4j.version}</version>
@@ -164,6 +169,11 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-x86</artifactId>
             <version>${nd4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
         </dependency>
 
         <!-- Testing  -->

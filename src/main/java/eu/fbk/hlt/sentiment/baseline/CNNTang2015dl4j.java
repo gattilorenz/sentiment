@@ -29,6 +29,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.ui.UiServer;
+import org.deeplearning4j.ui.weights.HistogramIterationListener;
 import org.ejml.simple.SimpleMatrix;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -61,12 +63,13 @@ public class CNNTang2015dl4j {
     final static Logger logger = LoggerFactory.getLogger(CNNTang2015dl4j.class);
 
     public static final String EMBEDDINGS = "glove.6B.50d";
-    public static final String DATASET = "lorenzo.amazon";
+    public static final String DEFAULT_DATASET = "lorenzo.tweet";
 
     protected WordVectors embeddings;
     protected LabeledSentences dataset;
     protected AnnotationPipeline pipeline;
     protected MultiLayerNetwork net;
+    protected List<IterationListener> listeners = new ArrayList<>();
 
     //Filled with unknown words encountered when debug is turned on
     private Set<String> unknownWords = new HashSet<>();
@@ -89,7 +92,6 @@ public class CNNTang2015dl4j {
         int outputNum = 5;
         int iterations = 20;
         int seed = 123;
-        int listenerFreq = iterations/5;
         int[] kernel = new int[] {1, 2};
         int[] stride = new int[] {1, 1};
 
@@ -120,10 +122,18 @@ public class CNNTang2015dl4j {
 
         net = new MultiLayerNetwork(conf);
         net.init();
-        net.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(listenerFreq)));
+    }
+
+    public void addListener(IterationListener listener) {
+        listeners.add(listener);
     }
 
     public void train() {
+        //At least adding a score iteration listener
+        if (listeners.size() == 0) {
+            listeners.add(new ScoreIterationListener(2));
+        }
+        net.setListeners(listeners);
         LabeledSentences.Sentence sentence;
         int counter = 0;
         int batchSize = 100;
@@ -246,15 +256,32 @@ public class CNNTang2015dl4j {
      *  via the DatasetProvider class
      */
     public static void main(String[] args) throws ParseException {
-        //Parameters params = new Parameters(args);
-        Injector injector = Guice.createInjector(new DatasetProvider());
+        Parameters params = new Parameters(args);
+        Injector injector = Guice.createInjector(new DatasetProvider(params));
         CNNTang2015dl4j project = injector.getInstance(CNNTang2015dl4j.class);
-        //project.dumpSentenceModel(new File(params.target));
-        //project.outputUnknownWords();
-        project.train();
+        if (params.dumpModel) {
+            project.dumpSentenceModel(new File(params.target));
+            project.outputUnknownWords();
+        } else {
+            if (params.enableStatistics) {
+                try {
+                    UiServer.main(null);
+                } catch (Exception e) {
+                    logger.error("Can't start webserver", e);
+                }
+                project.addListener(new HistogramIterationListener(2));
+            }
+            project.train();
+        }
     }
 
     public static class DatasetProvider extends AbstractModule {
+        protected String dataset;
+
+        DatasetProvider(Parameters params) {
+            dataset = params.dataset;
+        }
+
         @Override
         protected void configure() {}
 
@@ -279,7 +306,7 @@ public class CNNTang2015dl4j {
 
         @Provides
         LabeledSentences provideDataset(DatasetRepository repository) throws Exception {
-            Dataset dataset = repository.load(DATASET);
+            Dataset dataset = repository.load(this.dataset);
             if (!(dataset instanceof LabeledSentences)) {
                 throw new Exception("The instantiated dataset is of the wrong type");
             }
@@ -289,13 +316,25 @@ public class CNNTang2015dl4j {
 
     public static class Parameters {
         public String target;
+        public String dataset;
+        public boolean enableStatistics;
+        public boolean dumpModel;
 
         public Parameters(String[] args) throws ParseException {
+            //Defaults
+            enableStatistics = false;
+            dumpModel = false;
+            target = "";
+            dataset = DEFAULT_DATASET;
+
             //Defining input parameters
             Options options = new Options();
-            CLIOptionBuilder builder = new CLIOptionBuilder().hasArg().withArgName("file").isRequired();
+            CLIOptionBuilder builder = new CLIOptionBuilder().hasArg().withArgName("file");
 
-            options.addOption(builder.withDescription("Where to output the results of lookup layer").withLongOpt("target").toOption("t"));
+            options.addOption(builder.withDescription("Where to output the results of the lookup layer").withLongOpt("target").toOption("t"));
+            options.addOption(new CLIOptionBuilder().withDescription("Dump the sentence model of the input instead of training the network").withLongOpt("dump-model").toOption("dm"));
+            options.addOption(new CLIOptionBuilder().withDescription("Enable a web server with statistics (on port 8080)").withLongOpt("enable-statistics").toOption("es"));
+            options.addOption(new CLIOptionBuilder().hasArg().withArgName("dataset").withDescription("Training dataset name from the repository").withLongOpt("dataset").toOption("d"));
 
             //Parsing the input
             CommandLineParser parser = new PosixParser();
@@ -305,7 +344,20 @@ public class CNNTang2015dl4j {
                 line = parser.parse(options, args);
 
                 //Filling the initial configuration
-                target = line.getOptionValue("target");
+                enableStatistics = line.hasOption("enable-statistics");
+                dumpModel = line.hasOption("dump-model");
+                String target = line.getOptionValue("target");
+                if (target != null) {
+                    this.target = target;
+                } else {
+                    if (dumpModel) {
+                        throw new ParseException("If you want to dump a model then target file is a required parameter");
+                    }
+                }
+                String dataset = line.getOptionValue("dataset");
+                if (dataset != null) {
+                    this.dataset = dataset;
+                }
             } catch (ParseException e) {
                 //If parameters are wrong — print help
                 new HelpFormatter().printHelp(400, "java -Dfile.encoding=UTF-8 " + CNNTang2015dl4j.class.getName(), "\n", options, "\n", true);

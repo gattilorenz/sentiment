@@ -1,15 +1,35 @@
 glove.6B.50d:
-  location: http://futuro.media.s3-website.eu-central-1.amazonaws.com/data/glove.6B.50d.gz
+  location: http://futuro.media/data/glove.6B.50d.gz
   size: 69239637
   type: wordvectors
   compression: GZ
 glove.6B.100d:
-  location: http://futuro.media.s3-website.eu-central-1.amazonaws.com/data/glove.6B.100d.gz
+  location: http://futuro.media/data/glove.6B.100d.gz
   size: 134409071
   type: wordvectors
   compression: GZ
 lorenzo.amazon:
-  location: http://futuro.media.s3-website.eu-central-1.amazonaws.com/data/lorenzo.amazon.gz
+  location: http://futuro.media/data/lorenzo.amazon.gz
   size: 124752
+  type: labeledsentences
+  compression: GZ
+lorenzo.tweet:
+  location: http://futuro.media/data/lorenzo.tweet.gz
+  size: 147921
+  type: labeledsentences
+  compression: GZ
+lorenzo.nyt:
+  location: http://futuro.media/data/lorenzo.nyt.gz
+  size: 233464
+  type: labeledsentences
+  compression: GZ
+lorenzo.movies:
+  location: http://futuro.media/data/lorenzo.movies.gz
+  size: 94530
+  type: labeledsentences
+  compression: GZ
+lorenzo.semeval:
+  location: http://futuro.media/data/lorenzo.semeval.gz
+  size: 19721
   type: labeledsentences
   compression: GZ
