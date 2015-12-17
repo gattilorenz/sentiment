@@ -15,6 +15,7 @@ import eu.fbk.hlt.data.DatasetRepository;
 import eu.fbk.hlt.data.LabeledSentences;
 import eu.fbk.hlt.data.WordVectors;
 import eu.fbk.hlt.sentiment.util.CLIOptionBuilder;
+import eu.fbk.hlt.sentiment.util.Stopwatch;
 import org.apache.commons.cli.*;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -141,6 +142,7 @@ public class CNNTang2015dl4j {
 
         List<INDArray> testInput = new ArrayList<>();
         List<INDArray> testLabels = new ArrayList<>();
+        Stopwatch watch = Stopwatch.start();
         while ((sentence = dataset.readNext()) != null) {
             int label = Integer.parseInt(sentence.label);
             int rawLabels[] = new int[5];
@@ -158,14 +160,14 @@ public class CNNTang2015dl4j {
             accumulator.add(new DataSet(Nd4j.create(rawInput), ArrayUtil.toNDArray(rawLabels)));
             counter++;
             if (counter % batchSize == 0) {
-                logger.info(counter+" sentences processed");
+                logger.info(counter+" sentences processed. "+((double)watch.click()/1000)+"s");
             }
             if (counter % batchSize == 0) {
                 SplitTestAndTrain split = DataSet.merge(accumulator).splitTestAndTrain(0.8);
                 testInput.add(split.getTest().getFeatureMatrix());
                 testLabels.add(split.getTest().getLabels());
                 net.fit(split.getTrain());
-                logger.info("A batch has been trained");
+                logger.info("A batch has been trained. "+((double)watch.click()/1000)+"s");
                 accumulator.clear();
             }
         }
