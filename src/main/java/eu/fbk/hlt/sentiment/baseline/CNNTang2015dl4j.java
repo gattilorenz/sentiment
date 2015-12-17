@@ -84,8 +84,8 @@ public class CNNTang2015dl4j {
     }
 
     private void buildNeuralNet(int wordDim, int lookupDim) throws Exception {
-        int numRows = 50;
-        int numColumns = 1;
+        int numRows = 1;
+        int numColumns = 50;
         int outputNum = 5;
         int iterations = 10;
         int seed = 123;
@@ -98,13 +98,13 @@ public class CNNTang2015dl4j {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .list(3)
                 .layer(0, new ConvolutionLayer.Builder(1, 1)
-                        .stride(1,1)
-                        .nIn(wordDim)
+                        .stride(1, 1)
+                        .nIn(wordDim*50)
                         .nOut(lookupDim)
                         .weightInit(WeightInit.XAVIER)
                         .activation("relu")
                         .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[] {1,1})
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[] {1, 1}, new int[] {1, 1})
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
@@ -113,7 +113,7 @@ public class CNNTang2015dl4j {
                         .build())
                 .backprop(true).pretrain(false);
 
-        new ConvolutionLayerSetup(builder,numRows,numColumns,wordDim);
+        new ConvolutionLayerSetup(builder, numRows, numColumns, wordDim);
 
         MultiLayerConfiguration conf = builder.build();
 
