@@ -80,16 +80,18 @@ public class CNNTang2015dl4j {
         this.embeddings = embeddings;
         this.dataset = dataset;
         this.pipeline = pipeline;
-        buildNeuralNet(embeddings.getDim(), embeddings.getDim());
+        buildNeuralNet(embeddings.getDim(), embeddings.getDim()*2);
     }
 
     private void buildNeuralNet(int wordDim, int lookupDim) throws Exception {
         int numRows = 1;
         int numColumns = 50;
         int outputNum = 5;
-        int iterations = 10;
+        int iterations = 20;
         int seed = 123;
         int listenerFreq = iterations/5;
+        int[] kernel = new int[] {1, 2};
+        int[] stride = new int[] {1, 1};
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .seed(seed)
@@ -97,14 +99,13 @@ public class CNNTang2015dl4j {
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .list(3)
-                .layer(0, new ConvolutionLayer.Builder(1, 1)
-                        .stride(1, 1)
+                .layer(0, new ConvolutionLayer.Builder(kernel, stride)
                         .nIn(wordDim*50)
                         .nOut(lookupDim)
                         .weightInit(WeightInit.XAVIER)
                         .activation("relu")
                         .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[] {1, 1}, new int[] {1, 1})
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, kernel, stride)
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
@@ -125,6 +126,7 @@ public class CNNTang2015dl4j {
     public void train() {
         LabeledSentences.Sentence sentence;
         int counter = 0;
+        int batchSize = 100;
         ArrayList<DataSet> accumulator = new ArrayList<>();
 
         List<INDArray> testInput = new ArrayList<>();
@@ -144,12 +146,16 @@ public class CNNTang2015dl4j {
             }
 
             accumulator.add(new DataSet(Nd4j.create(rawInput), ArrayUtil.toNDArray(rawLabels)));
-            if (++counter % 100 == 0) {
-                SplitTestAndTrain split = DataSet.merge(accumulator).splitTestAndTrain(90);
+            counter++;
+            if (counter % batchSize == 0) {
+                logger.info(counter+" sentences processed");
+            }
+            if (counter % batchSize == 0) {
+                SplitTestAndTrain split = DataSet.merge(accumulator).splitTestAndTrain(0.8);
                 testInput.add(split.getTest().getFeatureMatrix());
                 testLabels.add(split.getTest().getLabels());
                 net.fit(split.getTrain());
-                logger.info(counter+" sentences processed");
+                logger.info("A batch has been trained");
                 accumulator.clear();
             }
         }
