@@ -2,6 +2,8 @@ package eu.fbk.hlt.data;
 
 import edu.stanford.nlp.util.Generics;
 import org.ejml.simple.SimpleMatrix;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,8 +23,8 @@ import java.util.Map;
 public class WordVectors extends Dataset {
     final static Logger logger = LoggerFactory.getLogger(WordVectors.class);
 
-    protected Map<String, SimpleMatrix> wordVectors;
-    protected SimpleMatrix zeroes;
+    protected Map<String, INDArray> wordVectors;
+    protected INDArray zeroes;
     protected int dim;
 
     public WordVectors(DatasetMetaInfo info) throws URISyntaxException {
@@ -61,28 +63,28 @@ public class WordVectors extends Dataset {
                 }
 
                 //Populating word vector
-                double[][] vector = new double[dim][1];
+                double[] vector = new double[dim];
                 for (int i = 0; i < dim; i++) {
-                    vector[i][0] = Double.valueOf(elements[i+1]);
+                    vector[i] = Double.valueOf(elements[i+1]);
                 }
 
                 //Saving into the dictionary
-                wordVectors.put(word, new SimpleMatrix(vector));
+                wordVectors.put(word, Nd4j.create(vector));
             }
 
-            zeroes = new SimpleMatrix(dim, 1);
+            zeroes = Nd4j.zeros(dim);
             logger.info("Parsed "+wordVectors.size()+" words");
         } catch (IOException e) {
             logger.error("Can't parse the input file: "+e.getClass().getSimpleName()+" "+e.getMessage());
         }
     }
 
-    public SimpleMatrix lookup(String word) {
+    public INDArray lookup(String word) {
         return wordVectors.getOrDefault(word, zeroes);
     }
 
-    public boolean isZeroes(SimpleMatrix matrix) {
-        return matrix.equals(zeroes);
+    public boolean isZeroes(INDArray vector) {
+        return vector.equals(zeroes);
     }
 
     public int getDim() {

@@ -20,6 +20,7 @@ import eu.fbk.hlt.sentiment.nn.duyu.*;
 import eu.fbk.hlt.sentiment.util.CLIOptionBuilder;
 import org.apache.commons.cli.*;
 import org.ejml.simple.SimpleMatrix;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class CNNTang2015 {
         SoftmaxLayer layer = (SoftmaxLayer) softmax.getInputLayer();
         while ((sentence = dataset.readNext()) != null) {
             int label = Integer.parseInt(sentence.label);
-            ArrayList<SimpleMatrix> vectors = sentence2vec(sentence);
+            ArrayList<INDArray> vectors = sentence2vec(sentence);
             setInput(vectors);
             for (Pipeline conv : net) {
                 conv.forward();
@@ -133,16 +134,15 @@ public class CNNTang2015 {
         }
     }
 
-    private void setInput(ArrayList<SimpleMatrix> input) {
+    private void setInput(ArrayList<INDArray> input) {
         assert input.size() > 0;
-        assert input.get(0).numRows() > 1;
-        assert input.get(0).numCols() == 1;
+        assert input.get(0).columns() > 1;
 
-        int dim = input.get(0).numRows();
+        int dim = input.get(0).columns();
         double[] rawInput = new double[dim*input.size()];
         for (int i = 0; i < input.size(); i++) {
             for (int j = 0; j < dim; j++) {
-                rawInput[j+i*dim] = input.get(i).get(j, 0);
+                rawInput[j+i*dim] = input.get(i).getDouble(j);
             }
         }
         for (Pipeline conv : net) {
@@ -162,12 +162,12 @@ public class CNNTang2015 {
         int counter = 0;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(target))) {
             while ((sentence = dataset.readNext()) != null) {
-                ArrayList<SimpleMatrix> vectors = sentence2vec(sentence);
+                ArrayList<INDArray> vectors = sentence2vec(sentence);
                 writer.write(sentence.label);
-                for (SimpleMatrix vector : vectors) {
-                    for (int i = 0; i < vector.numRows(); i++) {
+                for (INDArray vector : vectors) {
+                    for (int i = 0; i < vector.columns(); i++) {
                         writer.write(' ');
-                        writer.write(Double.toString(vector.get(i, 0)));
+                        writer.write(Double.toString(vector.getDouble(i)));
                     }
                 }
                 writer.newLine();
@@ -203,12 +203,12 @@ public class CNNTang2015 {
      * @param sentence Sentence as returned by the dataset
      * @return Vector representation of the sentence
      */
-    private ArrayList<SimpleMatrix> sentence2vec(LabeledSentences.Sentence sentence) {
+    private ArrayList<INDArray> sentence2vec(LabeledSentences.Sentence sentence) {
         Annotation annotation = new Annotation(sentence.sentence);
         pipeline.annotate(annotation);
-        ArrayList<SimpleMatrix> result = new ArrayList<>();
+        ArrayList<INDArray> result = new ArrayList<>();
         for (CoreLabel token : annotation.get(CoreAnnotations.TokensAnnotation.class)) {
-            SimpleMatrix vector = embeddings.lookup(token.word());
+            INDArray vector = embeddings.lookup(token.word());
             result.add(vector);
             if (logger.isDebugEnabled() && embeddings.isZeroes(vector)) {
                 unknownWords.add(token.word());

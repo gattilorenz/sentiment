@@ -43,10 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -63,7 +60,7 @@ import java.util.*;
 public class CNNTang2015dl4j {
     final static Logger logger = LoggerFactory.getLogger(CNNTang2015dl4j.class);
 
-    public static final String EMBEDDINGS = "glove.6B.50d";
+    public static final String DEFAULT_EMBEDDINGS = "glove.6B.50d";
     public static final String DEFAULT_DATASET = "lorenzo.tweet";
 
     protected WordVectors embeddings;
@@ -148,12 +145,12 @@ public class CNNTang2015dl4j {
             int rawLabels[] = new int[5];
             rawLabels[label] = 1;
 
-            ArrayList<SimpleMatrix> vectors = sentence2vec(sentence);
-            int dim = vectors.get(0).numRows();
+            ArrayList<INDArray> vectors = sentence2vec(sentence);
+            int dim = vectors.get(0).columns();
             double[] rawInput = new double[dim*50];
             for (int i = 0; i < vectors.size() && i < 50; i++) {
                 for (int j = 0; j < dim; j++) {
-                    rawInput[j+i*dim] = vectors.get(i).get(j, 0);
+                    rawInput[j+i*dim] = vectors.get(i).getDouble(j);
                 }
             }
 
@@ -178,8 +175,6 @@ public class CNNTang2015dl4j {
             INDArray output = net.output(testInput.get(i));
             eval.eval(testLabels.get(i), output);
         }
-        INDArray output = net.output(testInput.get(0));
-        eval.eval(testLabels.get(0), output);
         logger.info(eval.stats());
     }
 
@@ -194,12 +189,12 @@ public class CNNTang2015dl4j {
         int counter = 0;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(target))) {
             while ((sentence = dataset.readNext()) != null) {
-                ArrayList<SimpleMatrix> vectors = sentence2vec(sentence);
+                ArrayList<INDArray> vectors = sentence2vec(sentence);
                 writer.write(sentence.label);
-                for (SimpleMatrix vector : vectors) {
-                    for (int i = 0; i < vector.numRows(); i++) {
+                for (INDArray vector : vectors) {
+                    for (int i = 0; i < vector.columns(); i++) {
                         writer.write(' ');
-                        writer.write(Double.toString(vector.get(i, 0)));
+                        writer.write(Double.toString(vector.getDouble(i)));
                     }
                 }
                 writer.newLine();
@@ -235,12 +230,12 @@ public class CNNTang2015dl4j {
      * @param sentence Sentence as returned by the dataset
      * @return Vector representation of the sentence
      */
-    private ArrayList<SimpleMatrix> sentence2vec(LabeledSentences.Sentence sentence) {
+    private ArrayList<INDArray> sentence2vec(LabeledSentences.Sentence sentence) {
         Annotation annotation = new Annotation(sentence.sentence);
         pipeline.annotate(annotation);
-        ArrayList<SimpleMatrix> result = new ArrayList<>();
+        ArrayList<INDArray> result = new ArrayList<>();
         for (CoreLabel token : annotation.get(CoreAnnotations.TokensAnnotation.class)) {
-            SimpleMatrix vector = embeddings.lookup(token.word());
+            INDArray vector = embeddings.lookup(token.word());
             result.add(vector);
             if (logger.isDebugEnabled() && embeddings.isZeroes(vector)) {
                 unknownWords.add(token.word());
@@ -250,9 +245,7 @@ public class CNNTang2015dl4j {
     }
 
     /**
-     * The most magical method I've ever written. Magic is in every line.
-     *
-     * Just kidding. Here we automatically bootstrap
+     * Here we automatically bootstrap
      *  our environment with just a little bit
      *  of a custom WordVectors construction
      *  via the DatasetProvider class
@@ -261,8 +254,15 @@ public class CNNTang2015dl4j {
         Parameters params = new Parameters(args);
         Injector injector = Guice.createInjector(new DatasetProvider(params));
         CNNTang2015dl4j project = injector.getInstance(CNNTang2015dl4j.class);
+
         if (params.dumpModel) {
-            project.dumpSentenceModel(new File(params.target));
+            //Check if target folder is writable and create it if needed
+            File targetFolder = new File(params.targetFolder);
+            if (!targetFolder.exists() && !targetFolder.mkdirs()) {
+                logger.info("Unable to create target folder. Halting");
+            }
+
+            project.dumpSentenceModel(new File(targetFolder, params.sentencesFilename));
             project.outputUnknownWords();
         } else {
             if (params.enableStatistics) {
@@ -279,9 +279,11 @@ public class CNNTang2015dl4j {
 
     public static class DatasetProvider extends AbstractModule {
         protected String dataset;
+        protected String embeddings;
 
         DatasetProvider(Parameters params) {
             dataset = params.dataset;
+            embeddings = params.embeddings;
         }
 
         @Override
@@ -289,17 +291,23 @@ public class CNNTang2015dl4j {
 
         @Provides
         AnnotationPipeline providePipeline() {
+            //Silence output to err
+            System.setErr(new PrintStream(new OutputStream() {public void write(int b) {}}));
+
             Properties commonProps = new Properties();
             commonProps.setProperty("annotators", "tokenize, ssplit, parse");
             StanfordCoreNLP pipeline = new StanfordCoreNLP(commonProps);
             BinarizerAnnotator binarizerAnnotator = new BinarizerAnnotator("ba", new Properties());
             pipeline.addAnnotator(binarizerAnnotator);
+
+            //Restore output to err
+            System.setErr(System.err);
             return pipeline;
         }
 
         @Provides
         WordVectors provideWordVectors(DatasetRepository repository) throws Exception {
-            Dataset dataset = repository.load(EMBEDDINGS);
+            Dataset dataset = repository.load(this.embeddings);
             if (!(dataset instanceof WordVectors)) {
                 throw new Exception("The instantiated dataset is of the wrong type");
             }
@@ -317,23 +325,34 @@ public class CNNTang2015dl4j {
     }
 
     public static class Parameters {
-        public String target;
         public String dataset;
+        public String embeddings;
         public boolean enableStatistics;
         public boolean dumpModel;
+
+        public String targetFolder;
+        public String sentencesFilename;
+        public String unknownWordsFilename;
+        public String trainingStatsFilename;
 
         public Parameters(String[] args) throws ParseException {
             //Defaults
             enableStatistics = false;
             dumpModel = false;
-            target = "";
+
+            targetFolder = "target";
+            sentencesFilename = "sentences.tsv";
+            unknownWordsFilename = "unknown_words.tsv";
+            trainingStatsFilename = "training_stats.txt";
+
             dataset = DEFAULT_DATASET;
+            embeddings = DEFAULT_EMBEDDINGS;
 
             //Defining input parameters
             Options options = new Options();
-            CLIOptionBuilder builder = new CLIOptionBuilder().hasArg().withArgName("file");
+            CLIOptionBuilder builder = new CLIOptionBuilder().hasArg().withArgName("directory");
 
-            options.addOption(builder.withDescription("Where to output the results of the lookup layer").withLongOpt("target").toOption("t"));
+            options.addOption(builder.withDescription("Target directory for the results of analysis").withLongOpt("target").toOption("t"));
             options.addOption(new CLIOptionBuilder().withDescription("Dump the sentence model of the input instead of training the network").withLongOpt("dump-model").toOption("dm"));
             options.addOption(new CLIOptionBuilder().withDescription("Enable a web server with statistics (on port 8080)").withLongOpt("enable-statistics").toOption("es"));
             options.addOption(new CLIOptionBuilder().hasArg().withArgName("dataset").withDescription("Training dataset name from the repository").withLongOpt("dataset").toOption("d"));
@@ -350,7 +369,7 @@ public class CNNTang2015dl4j {
                 dumpModel = line.hasOption("dump-model");
                 String target = line.getOptionValue("target");
                 if (target != null) {
-                    this.target = target;
+                    this.targetFolder = target;
                 } else {
                     if (dumpModel) {
                         throw new ParseException("If you want to dump a model then target file is a required parameter");
