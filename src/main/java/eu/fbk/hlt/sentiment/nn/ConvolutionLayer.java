@@ -76,9 +76,12 @@ public class ConvolutionLayer implements NNInterface {
         int length = inputDim / elementDim - windowDim + 1;
         int[] outputDims = new int[length];
         Arrays.fill(outputDims, outputDim);
+        Random rnd = new Random();
+        double rndBase = -0.01;
         Pipeline connect = new Pipeline(new MultiConnectLayer(outputDims));
         for (int i = 0; i < length; i++) {
             Pipeline pipeline = new Pipeline((LinearLayer) linearProt.cloneWithTiedParams());
+            pipeline.getInputLayer().randomize(rnd, -1.0 * rndBase, rndBase);
             pipeline.after((TanhLayer) tanhProt.cloneWithTiedParams()).after(connect, i);
             layers.add(pipeline);
         }

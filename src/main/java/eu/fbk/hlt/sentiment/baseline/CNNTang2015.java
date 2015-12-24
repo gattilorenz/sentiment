@@ -19,8 +19,10 @@ import eu.fbk.hlt.sentiment.nn.Pipeline;
 import eu.fbk.hlt.sentiment.nn.duyu.*;
 import eu.fbk.hlt.sentiment.util.CLIOptionBuilder;
 import org.apache.commons.cli.*;
+import org.deeplearning4j.eval.Evaluation;
 import org.ejml.simple.SimpleMatrix;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +32,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.channels.Pipe;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The definition of a Convolutional Neural Network for the sentence representation by Duyu Tang
@@ -78,12 +77,15 @@ public class CNNTang2015 {
         this.net = new ArrayList<>();
         //Create a set of layers for each of the window sizes
         Pipeline connect = new Pipeline(new MultiConnectLayer(new int[]{lookupDim, lookupDim, lookupDim}));
+        LinearLayer linear = new LinearLayer(lookupDim, 5);
+        double rndBase = -0.01;
+        linear.randomize(new Random(), -1.0 * rndBase, rndBase);
         softmax = connect
             .after(new AverageLayer(lookupDim*3, lookupDim))
-            .after(new LinearLayer(lookupDim, 5))
+            .after(linear)
             .after(new SoftmaxLayer(5));
 
-        for (int windowSize = 1; windowSize < 3; windowSize++) {
+        for (int windowSize = 1; windowSize <= 3; windowSize++) {
             Pipeline net = new Pipeline(new ConvolutionLayer(windowSize, wordDim, lookupDim));
             net.link(connect, windowSize-1);
             this.net.add(net);
@@ -96,14 +98,28 @@ public class CNNTang2015 {
         double lossV = 0.0;
         final double threshold = 0.001;
         SoftmaxLayer layer = (SoftmaxLayer) softmax.getInputLayer();
+
+        List<List<INDArray>> testInput = new ArrayList<>();
+        List<Integer> testLabels = new ArrayList<>();
+        Random rand = new Random(241);
         while ((sentence = dataset.readNext()) != null) {
             int label = Integer.parseInt(sentence.label);
             ArrayList<INDArray> vectors = sentence2vec(sentence);
+            //At this point we should add padding, but for now we just disregard short sentences
+            if (vectors.size() <= 3) {
+                continue;
+            }
+            //Save 20% of samples randomly as a test set
+            if (rand.nextDouble() >= 0.8) {
+                testInput.add(vectors);
+                testLabels.add(label);
+                continue;
+            }
             setInput(vectors);
             for (Pipeline conv : net) {
                 conv.forward();
             }
-            softmax.getInputLayer();
+
             lossV += -Math.log(layer.output[label]);
             for (int i = 0; i < layer.outputG.length; i++) {
                 layer.outputG[i] = 0.0;
@@ -127,14 +143,27 @@ public class CNNTang2015 {
                 conv.clearGrad();
             }
 
-            if (++counter % 1000 == 0) {
+            if (++counter % 100 == 0) {
                 logger.info(counter+" sentences processed");
                 logger.info("lossV/lossC = "+lossV+"/"+(lossV/counter));
             }
         }
+
+        logger.info("Evaluate model....");
+        Evaluation eval = new Evaluation(5);
+        for(int i = 0; i < testInput.size(); i++) {
+            setInput(testInput.get(i));
+            for (Pipeline conv : net) {
+                conv.forward();
+            }
+            INDArray label = Nd4j.zeros(5);
+            label.putScalar(testLabels.get(i), 1.0);
+            eval.eval(Nd4j.create(layer.output), label);
+        }
+        logger.info(eval.stats());
     }
 
-    private void setInput(ArrayList<INDArray> input) {
+    private void setInput(List<INDArray> input) {
         assert input.size() > 0;
         assert input.get(0).columns() > 1;
 
