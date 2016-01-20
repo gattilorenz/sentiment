@@ -88,7 +88,6 @@ public class DatasetRepository {
     }
 
     private Dataset instantiateDataset(DatasetMetaInfo location) throws Exception {
-        File source = new File(location.location.toURI());
         Dataset target;
         logger.info("Starting loading the dataset "+location.name);
         Stopwatch watch = Stopwatch.start();

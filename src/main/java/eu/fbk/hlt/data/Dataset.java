@@ -34,4 +34,8 @@ public abstract class Dataset {
         }
         return new LineNumberReader(new InputStreamReader(stream));
     }
+
+    public DatasetMetaInfo getInfo() {
+        return info;
+    }
 }

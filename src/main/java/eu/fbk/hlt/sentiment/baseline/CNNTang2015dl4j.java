@@ -15,6 +15,8 @@ import eu.fbk.hlt.data.DatasetRepository;
 import eu.fbk.hlt.data.LabeledSentences;
 import eu.fbk.hlt.data.WordVectors;
 import eu.fbk.hlt.sentiment.util.CLIOptionBuilder;
+import eu.fbk.hlt.sentiment.util.DatasetProvider;
+import eu.fbk.hlt.sentiment.util.SentimentParameters;
 import eu.fbk.hlt.sentiment.util.Stopwatch;
 import org.apache.commons.cli.*;
 import org.deeplearning4j.eval.Evaluation;
@@ -56,6 +58,7 @@ import java.util.*;
  * Softmax at the top
  *
  * @author Yaroslav Nechaev (remper@me.com)
+ * @deprecated
  */
 public class CNNTang2015dl4j {
     final static Logger logger = LoggerFactory.getLogger(CNNTang2015dl4j.class);
@@ -251,7 +254,7 @@ public class CNNTang2015dl4j {
      *  via the DatasetProvider class
      */
     public static void main(String[] args) throws ParseException {
-        Parameters params = new Parameters(args);
+        SentimentParameters params = new SentimentParameters(args);
         Injector injector = Guice.createInjector(new DatasetProvider(params));
         CNNTang2015dl4j project = injector.getInstance(CNNTang2015dl4j.class);
 
@@ -274,116 +277,6 @@ public class CNNTang2015dl4j {
                 project.addListener(new HistogramIterationListener(2));
             }
             project.train();
-        }
-    }
-
-    public static class DatasetProvider extends AbstractModule {
-        protected String dataset;
-        protected String embeddings;
-
-        DatasetProvider(Parameters params) {
-            dataset = params.dataset;
-            embeddings = params.embeddings;
-        }
-
-        @Override
-        protected void configure() {}
-
-        @Provides
-        AnnotationPipeline providePipeline() {
-            //Silence output to err
-            System.setErr(new PrintStream(new OutputStream() {public void write(int b) {}}));
-
-            Properties commonProps = new Properties();
-            commonProps.setProperty("annotators", "tokenize, ssplit, parse");
-            StanfordCoreNLP pipeline = new StanfordCoreNLP(commonProps);
-            BinarizerAnnotator binarizerAnnotator = new BinarizerAnnotator("ba", new Properties());
-            pipeline.addAnnotator(binarizerAnnotator);
-
-            //Restore output to err
-            System.setErr(System.err);
-            return pipeline;
-        }
-
-        @Provides
-        WordVectors provideWordVectors(DatasetRepository repository) throws Exception {
-            Dataset dataset = repository.load(this.embeddings);
-            if (!(dataset instanceof WordVectors)) {
-                throw new Exception("The instantiated dataset is of the wrong type");
-            }
-            return (WordVectors) dataset;
-        }
-
-        @Provides
-        LabeledSentences provideDataset(DatasetRepository repository) throws Exception {
-            Dataset dataset = repository.load(this.dataset);
-            if (!(dataset instanceof LabeledSentences)) {
-                throw new Exception("The instantiated dataset is of the wrong type");
-            }
-            return (LabeledSentences) dataset;
-        }
-    }
-
-    public static class Parameters {
-        public String dataset;
-        public String embeddings;
-        public boolean enableStatistics;
-        public boolean dumpModel;
-
-        public String targetFolder;
-        public String sentencesFilename;
-        public String unknownWordsFilename;
-        public String trainingStatsFilename;
-
-        public Parameters(String[] args) throws ParseException {
-            //Defaults
-            enableStatistics = false;
-            dumpModel = false;
-
-            targetFolder = "target";
-            sentencesFilename = "sentences.tsv";
-            unknownWordsFilename = "unknown_words.tsv";
-            trainingStatsFilename = "training_stats.txt";
-
-            dataset = DEFAULT_DATASET;
-            embeddings = DEFAULT_EMBEDDINGS;
-
-            //Defining input parameters
-            Options options = new Options();
-            CLIOptionBuilder builder = new CLIOptionBuilder().hasArg().withArgName("directory");
-
-            options.addOption(builder.withDescription("Target directory for the results of analysis").withLongOpt("target").toOption("t"));
-            options.addOption(new CLIOptionBuilder().withDescription("Dump the sentence model of the input instead of training the network").withLongOpt("dump-model").toOption("dm"));
-            options.addOption(new CLIOptionBuilder().withDescription("Enable a web server with statistics (on port 8080)").withLongOpt("enable-statistics").toOption("es"));
-            options.addOption(new CLIOptionBuilder().hasArg().withArgName("dataset").withDescription("Training dataset name from the repository").withLongOpt("dataset").toOption("d"));
-
-            //Parsing the input
-            CommandLineParser parser = new PosixParser();
-            CommandLine line;
-            try {
-                //Parse the command line arguments
-                line = parser.parse(options, args);
-
-                //Filling the initial configuration
-                enableStatistics = line.hasOption("enable-statistics");
-                dumpModel = line.hasOption("dump-model");
-                String target = line.getOptionValue("target");
-                if (target != null) {
-                    this.targetFolder = target;
-                } else {
-                    if (dumpModel) {
-                        throw new ParseException("If you want to dump a model then target file is a required parameter");
-                    }
-                }
-                String dataset = line.getOptionValue("dataset");
-                if (dataset != null) {
-                    this.dataset = dataset;
-                }
-            } catch (ParseException e) {
-                //If parameters are wrong — print help
-                new HelpFormatter().printHelp(400, "java -Dfile.encoding=UTF-8 " + CNNTang2015dl4j.class.getName(), "\n", options, "\n", true);
-                throw e;
-            }
         }
     }
 }

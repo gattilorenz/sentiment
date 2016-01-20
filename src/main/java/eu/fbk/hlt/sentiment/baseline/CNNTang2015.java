@@ -18,6 +18,7 @@ import eu.fbk.hlt.sentiment.nn.ConvolutionLayer;
 import eu.fbk.hlt.sentiment.nn.Pipeline;
 import eu.fbk.hlt.sentiment.nn.duyu.*;
 import eu.fbk.hlt.sentiment.util.CLIOptionBuilder;
+import eu.fbk.hlt.sentiment.util.SentimentParameters;
 import org.apache.commons.cli.*;
 import org.deeplearning4j.eval.Evaluation;
 import org.ejml.simple.SimpleMatrix;
@@ -44,6 +45,7 @@ import java.util.*;
  * Softmax at the top
  *
  * @author Yaroslav Nechaev (remper@me.com)
+ * @deprecated
  */
 public class CNNTang2015 {
     final static Logger logger = LoggerFactory.getLogger(CNNTang2015.class);
@@ -158,7 +160,7 @@ public class CNNTang2015 {
             }
             INDArray label = Nd4j.zeros(5);
             label.putScalar(testLabels.get(i), 1.0);
-            eval.eval(Nd4j.create(layer.output), label);
+            eval.eval(label, Nd4j.create(layer.output));
         }
         logger.info(eval.stats());
     }
@@ -255,7 +257,7 @@ public class CNNTang2015 {
      *  via the DatasetProvider class
      */
     public static void main(String[] args) throws ParseException {
-        Parameters params = new Parameters(args);
+        SentimentParameters params = new SentimentParameters(args);
         Injector injector = Guice.createInjector(new DatasetProvider());
         CNNTang2015 project = injector.getInstance(CNNTang2015.class);
         //project.dumpSentenceModel(new File(params.target));
