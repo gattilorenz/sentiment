@@ -135,7 +135,7 @@ public class CNNTang2015 extends AbstractModel {
         int dim = input.columns();
         int size = input.rows() < 3 ? 3 : input.rows();
         double[] rawInput = new double[dim*size];
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < input.rows(); i++) {
             for (int j = 0; j < dim; j++) {
                 rawInput[j+i*dim] = input.getRow(i).getDouble(j);
             }

@@ -69,7 +69,7 @@ public abstract class AbstractModel {
             }
         }
 
-        logger.info("Evaluate model....");
+        logger.info("Evaluating model....");
         logger.info(evaluate(testInput).stats());
     }
 
