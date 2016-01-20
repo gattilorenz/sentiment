@@ -32,7 +32,9 @@ public class DatasetProvider extends AbstractModule {
     }
 
     @Override
-    protected void configure() {}
+    protected void configure() {
+        ReflectionsHelper.registerUrlTypes();
+    }
 
     @Provides
     @Named("classes")

@@ -1,8 +1,6 @@
 package eu.fbk.hlt.sentiment.baseline;
 
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
+import com.google.inject.*;
 import com.google.inject.name.Named;
 import edu.stanford.nlp.pipeline.AnnotationPipeline;
 import eu.fbk.hlt.data.LabeledSentences;
@@ -26,6 +24,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -123,7 +122,7 @@ public class NaiveCNNDl4j extends AbstractModel {
             }
         }
 
-       currentBatch.add(new DataSet(alignInput(input), label));
+        currentBatch.add(new DataSet(alignInput(input), label));
 
         if (currentBatch.size() % DEFAULT_BATCH_SIZE == 0) {
             Stopwatch watch = Stopwatch.start();
@@ -192,7 +191,7 @@ public class NaiveCNNDl4j extends AbstractModel {
      *  of a custom WordVectors construction
      *  via the DatasetProvider class
      */
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) throws ParseException, Nd4jBackend.NoAvailableBackendException {
         SentimentParameters params = new SentimentParameters(args);
         Injector injector = Guice.createInjector(new DatasetProvider(params));
         NaiveCNNDl4j project = injector.getInstance(NaiveCNNDl4j.class);
