@@ -145,6 +145,13 @@
             <version>0.28</version>
         </dependency>
 
+        <!-- libSVM -->
+		<dependency>
+			<groupId>com.datumbox</groupId>
+			<artifactId>libsvm</artifactId>
+			<version>3.21</version>
+		</dependency>        
+
         <!-- Deep learning library -->
         <dependency>
             <groupId>org.deeplearning4j</groupId>
