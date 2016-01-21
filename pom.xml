@@ -33,10 +33,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>0.4-rc3.7</nd4j.version>
-        <dl4j.version>	0.4-rc3.7 </dl4j.version>
-        <!--<nd4j.version>0.4-rc3.8-SNAPSHOT</nd4j.version>
-        <dl4j.version>	0.4-rc3.8-SNAPSHOT </dl4j.version>-->
+        <!--<nd4j.version>0.4-rc3.8</nd4j.version>
+        <dl4j.version>	0.4-rc3.8 </dl4j.version>-->
+        <nd4j.version>0.4-rc3.9-SNAPSHOT</nd4j.version>
+        <dl4j.version>	0.4-rc3.9-SNAPSHOT </dl4j.version>
         <jackson.version>2.5.1</jackson.version>
     </properties>
 
@@ -150,7 +150,7 @@
 			<groupId>com.datumbox</groupId>
 			<artifactId>libsvm</artifactId>
 			<version>3.21</version>
-		</dependency>        
+		</dependency>
 
         <!-- Deep learning library -->
         <dependency>
@@ -166,13 +166,13 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-ui</artifactId>
-            <version>0.4-rc3.7</version>
+            <version>${dl4j.version}</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jcublas-7.5</artifactId>
-            <version>0.4-rc3.7</version>
-        </dependency>
+            <version>${nd4j.version}</version>
+        </dependency>-->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-x86</artifactId>
