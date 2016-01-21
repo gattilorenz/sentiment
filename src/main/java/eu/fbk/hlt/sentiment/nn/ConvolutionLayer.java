@@ -33,7 +33,10 @@ public class ConvolutionLayer implements NNInterface {
 
     public ConvolutionLayer(int windowDim, int elementDim, int outputDim) {
         assert windowDim > 0 && elementDim > 0 && outputDim > 0;
+        Random rnd = new Random();
+        double rndBase = -0.01;
         linearProt = new LinearLayer(windowDim * elementDim, outputDim);
+        linearProt.randomize(rnd, -1.0 * rndBase, rndBase);
         tanhProt = new TanhLayer(outputDim);
         this.elementDim = elementDim;
         this.windowDim = windowDim;
@@ -76,12 +79,9 @@ public class ConvolutionLayer implements NNInterface {
         int length = inputDim / elementDim - windowDim + 1;
         int[] outputDims = new int[length];
         Arrays.fill(outputDims, outputDim);
-        Random rnd = new Random();
-        double rndBase = -0.01;
         Pipeline connect = new Pipeline(new MultiConnectLayer(outputDims));
         for (int i = 0; i < length; i++) {
             Pipeline pipeline = new Pipeline((LinearLayer) linearProt.cloneWithTiedParams());
-            pipeline.getInputLayer().randomize(rnd, -1.0 * rndBase, rndBase);
             pipeline.after((TanhLayer) tanhProt.cloneWithTiedParams()).after(connect, i);
             layers.add(pipeline);
         }

@@ -34,6 +34,7 @@ public class CNNTang2015 extends AbstractModel {
     final static Logger logger = LoggerFactory.getLogger(CNNTang2015.class);
 
     public static final double RESULT_THESHOLD = 0.001;
+    public static final double LEARNING_RATE = 0.03;
 
     protected LabeledSentences dataset;
     protected ArrayList<Pipeline> net;
@@ -93,7 +94,7 @@ public class CNNTang2015 extends AbstractModel {
         }
 
         for (Pipeline conv : net) {
-            conv.update(0.03);
+            conv.update(LEARNING_RATE);
         }
 
         for (Pipeline conv : net) {
@@ -101,7 +102,7 @@ public class CNNTang2015 extends AbstractModel {
         }
 
         if (++counter % DEFAULT_BATCH_SIZE == 0) {
-            logger.info("lossV/lossC = "+lossV+"/"+(lossV/counter));
+            logger.info("lossC = "+(lossV/counter));
         }
     }
 
