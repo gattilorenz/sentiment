@@ -83,11 +83,11 @@ public class CNNTang2015 extends AbstractModel {
             layer.outputG[i] = 0.0;
         }
 
-        if (layer.output[trueLabel] < RESULT_THESHOLD) {
-            layer.outputG[trueLabel] = 1.0 / RESULT_THESHOLD;
-        } else {
-            layer.outputG[trueLabel] = 1.0 / layer.output[trueLabel];
+        double finalG = layer.output[trueLabel];
+        if (finalG < RESULT_THESHOLD) {
+            finalG = RESULT_THESHOLD;
         }
+        layer.outputG[trueLabel] = 1.0 / finalG;
 
         for (Pipeline conv : net) {
             conv.backward();
