@@ -145,21 +145,16 @@ public class NBSVM {
 
 
     public static void main(String[] args) throws Exception {
-        String dataFileName = "";
+        String dataFileName;
         String outFileName;
-        String svmModelFile = "";
-
-        ngramsToUse = new ArrayList<>(3);
-        ngramsToUse.add(1);
-        ngramsToUse.add(2);
-        ngramsToUse.add(3);
+        String svmModelFile;
 
         ArgumentParser parser = ArgumentParsers.newArgumentParser("NBSVM").description("Java conversion of https://github.com/mesnilgr/nbsvm");
-        parser.addArgument("-data").type(String.class).help("tsv input file (format: label\\tsentence)");
-        parser.addArgument("-model").type(String.class).help("where to load/save the model");
-        parser.addArgument("-out").type(String.class).help("output file with predictions and real labels");
-        parser.addArgument("-ngrams").type(Integer.class).nargs("+").help("the grams to use (e.g. 1 2 3 uses uni+bi+trigrams, the default");
-        parser.addArgument("-split").type(Integer.class).help("what percentage to use for the split (default: 60)");
+        parser.addArgument("-data").type(String.class).help("tsv input file (format: label\\tsentence)").setDefault("");
+        parser.addArgument("-model").type(String.class).help("where to load/save the model").setDefault("");
+        parser.addArgument("-out").type(String.class).help("output file with predictions and real labels").setDefault("");
+        parser.addArgument("-ngrams").type(Integer.class).nargs("+").help("the grams to use (e.g. 1 2 3 uses uni+bi+trigrams, the default").setDefault("1 2 3");
+        parser.addArgument("-split").type(Integer.class).help("what percentage to use for the split (default: 60)").setDefault(60);
         try {
             Namespace res = parser.parseArgs(args);
             dataFileName = res.get("data");
@@ -172,7 +167,7 @@ public class NBSVM {
             return;
         }
 
-        if (new File(dataFileName).isFile()) {
+        if (!new File(dataFileName).isFile()) {
             System.err.println("Invalid input file path, exiting.");
             return;
         }
@@ -302,14 +297,16 @@ public class NBSVM {
                 ++correct;
             total++;
         }
-        System.out.println("Accuracy on training data = " + (double) correct / total * 100 +
-                "% (" + correct + "/" + total + ") (classification)\n");
+
+        //System.out.println("Accuracy on training data = " + (double) correct / total * 100 +
+        //        "% (" + correct + "/" + total + ") (classification)\n");
 
         long tEnd = System.currentTimeMillis();
         double elapsedSeconds = (tEnd - tStart) / 1000.0;
         System.out.println("finished training in " + Math.round(elapsedSeconds / 60) + " min.");
         try {
-            svm.svm_save_model(svmModelFile, model);
+            if (svmModelFile != null && svmModelFile != "")
+                svm.svm_save_model(svmModelFile, model);
         } catch (IOException e) {
             e.printStackTrace();
         }
