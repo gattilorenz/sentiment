@@ -90,7 +90,32 @@ public abstract class AbstractModel {
 
     public void interactive() {
         logger.info("Enabling interactive mode");
-        addSentenceModelListener((label, sentence1) -> System.out.println("Sentence model: "+ sentence1.toString()));
+        addSentenceModelListener(new SentenceModelListener() {
+            @Override
+            public void process(String label, INDArray sentence) {
+                System.out.println("Sentence model: "+ sentence.toString());
+            }
+
+            @Override
+            public void tokens(List<String> knownTokens, List<String> unknownTokens) {
+                StringBuilder sb = new StringBuilder();
+                for (String token : knownTokens) {
+                    if (sb.length() > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(token);
+                }
+                System.out.println("Known tokens: "+sb.toString());
+                sb = new StringBuilder();
+                for (String token : unknownTokens) {
+                    if (sb.length() > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(token);
+                }
+                System.out.println("Unknown tokens: "+sb.toString());
+            }
+        });
 
         try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
@@ -153,14 +178,24 @@ public abstract class AbstractModel {
         List<CoreLabel> annotations = annotation.get(CoreAnnotations.TokensAnnotation.class);
         INDArray result = Nd4j.create(dim*annotations.size());
         int counter = 0;
+        List<String> knownTokens = new ArrayList<>();
+        List<String> unknownTokens = new ArrayList<>();
         for (CoreLabel token : annotations) {
             INDArray vector = embeddings.lookup(token.word().toLowerCase());
             result.put(new INDArrayIndex[]{NDArrayIndex.interval(counter*dim, (counter+1)*dim)}, vector);
+            if (sentenceModelListeners.size() > 0) {
+                if (embeddings.isZeroes(vector)) {
+                    unknownTokens.add(token.word());
+                } else {
+                    knownTokens.add(token.word());
+                }
+            }
             counter++;
         }
         INDArray matResult = result.reshape(annotations.size(), dim);
         //Notify listeners
         sentenceModelListeners.forEach(value -> value.process(sentence.label, matResult));
+        sentenceModelListeners.forEach(value -> value.tokens(knownTokens, unknownTokens));
         return matResult;
     }
 
@@ -170,5 +205,6 @@ public abstract class AbstractModel {
 
     public interface SentenceModelListener {
         void process(String label, INDArray sentence);
+        void tokens(List<String> knownTokens, List<String> unknownTokens);
     }
 }

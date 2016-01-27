@@ -8,6 +8,36 @@ glove.6B.100d:
   size: 134409071
   type: wordvectors
   compression: GZ
+glove.6B.200d:
+  location: http://futuro.media/data/glove.6B.200d.gz
+  size: 264545883
+  type: wordvectors
+  compression: GZ
+glove.6B.300d:
+  location: http://futuro.media/data/glove.6B.300d.gz
+  size: 394672355
+  type: wordvectors
+  compression: GZ
+glove.twitter.27B.25d:
+  location: http://futuro.media/data/glove.twitter.27B.25d.gz
+  size: 109906729
+  type: wordvectors
+  compression: GZ
+glove.twitter.27B.50d:
+  location: http://futuro.media/data/glove.twitter.27B.50d.gz
+  size: 209322498
+  type: wordvectors
+  compression: GZ
+glove.twitter.27B.100d:
+  location: http://futuro.media/data/glove.twitter.27B.100d.gz
+  size: 406221060
+  type: wordvectors
+  compression: GZ
+glove.twitter.27B.200d:
+  location: http://futuro.media/data/glove.twitter.27B.200d.gz
+  size: 795980893
+  type: wordvectors
+  compression: GZ
 lorenzo.amazon:
   location: http://futuro.media/data/lorenzo.amazon.gz
   size: 124752
