@@ -196,5 +196,8 @@ public class NaiveCNNDl4j extends AbstractModel {
         Injector injector = Guice.createInjector(new DatasetProvider(params));
         NaiveCNNDl4j project = injector.getInstance(NaiveCNNDl4j.class);
         project.train(injector.getInstance(LabeledSentences.class));
+        if (params.interactiveMode) {
+            project.interactive();
+        }
     }
 }

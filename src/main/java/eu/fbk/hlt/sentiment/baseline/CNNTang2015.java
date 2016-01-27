@@ -161,5 +161,8 @@ public class CNNTang2015 extends AbstractModel {
         Injector injector = Guice.createInjector(new DatasetProvider(params));
         CNNTang2015 project = injector.getInstance(CNNTang2015.class);
         project.train(injector.getInstance(LabeledSentences.class));
+        if (params.interactiveMode) {
+            project.interactive();
+        }
     }
 }

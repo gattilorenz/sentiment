@@ -15,6 +15,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -81,6 +84,31 @@ public abstract class AbstractModel {
         return predict(sentence2mat(sentence));
     }
 
+    public INDArray predict(String sentence) {
+        return predict(new LabeledSentences.Sentence("unknown", sentence));
+    }
+
+    public void interactive() {
+        logger.info("Enabling interactive mode");
+        addSentenceModelListener((label, sentence1) -> System.out.println("Sentence model: "+ sentence1.toString()));
+
+        try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in))) {
+            while (true) {
+                System.out.println("Please write the sentence:");
+                String sentence = input.readLine();
+                INDArray result = predict(sentence);
+                System.out.println("Sentence: "+sentence);
+                System.out.println("Result: ");
+                for (int i = 0; i < result.columns(); i++) {
+                    System.out.println(" "+classes.get(i)+" — "+result.getDouble(i)*100+"%");
+                }
+                System.out.println();
+            }
+        } catch (IOException e) {
+            logger.error("Error while reading from stream or closing", e);
+        }
+    }
+
     /**
      * Feed a single training sample to the model
      */
@@ -141,6 +169,6 @@ public abstract class AbstractModel {
     }
 
     public interface SentenceModelListener {
-        public void process(String label, INDArray sentence);
+        void process(String label, INDArray sentence);
     }
 }
