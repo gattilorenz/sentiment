@@ -15,6 +15,8 @@ public class SentimentParameters {
     public String embeddings;
     public boolean enableStatistics;
     public boolean dumpModel;
+    public boolean interactiveMode;
+    public boolean threeClass;
 
     public String targetFolder;
     public String sentencesFilename;
@@ -25,6 +27,8 @@ public class SentimentParameters {
         //Defaults
         enableStatistics = false;
         dumpModel = false;
+        interactiveMode = false;
+        threeClass = false;
 
         targetFolder = "target";
         sentencesFilename = "sentences.tsv";
@@ -41,7 +45,10 @@ public class SentimentParameters {
         options.addOption(builder.withDescription("Target directory for the results of analysis").withLongOpt("target").toOption("t"));
         options.addOption(new CLIOptionBuilder().withDescription("Dump the sentence model of the input instead of training the network").withLongOpt("dump-model").toOption("dm"));
         options.addOption(new CLIOptionBuilder().withDescription("Enable a web server with statistics (on port 8080)").withLongOpt("enable-statistics").toOption("es"));
+        options.addOption(new CLIOptionBuilder().withDescription("Enable interactive mode after training").withLongOpt("interactive").toOption("i"));
+        options.addOption(new CLIOptionBuilder().withDescription("Work with 3 classes instead of 5").withLongOpt("three-class").toOption("tc"));
         options.addOption(new CLIOptionBuilder().hasArg().withArgName("dataset").withDescription("Training dataset name from the repository").withLongOpt("dataset").toOption("d"));
+        options.addOption(new CLIOptionBuilder().hasArg().withArgName("embeddings").withDescription("Word embeddings that should be used").withLongOpt("embeddings").toOption("e"));
 
         //Parsing the input
         CommandLineParser parser = new PosixParser();
@@ -53,6 +60,8 @@ public class SentimentParameters {
             //Filling the initial configuration
             enableStatistics = line.hasOption("enable-statistics");
             dumpModel = line.hasOption("dump-model");
+            interactiveMode = line.hasOption("interactive");
+            threeClass = line.hasOption("three-class");
             String target = line.getOptionValue("target");
             if (target != null) {
                 this.targetFolder = target;
@@ -64,6 +73,11 @@ public class SentimentParameters {
             String dataset = line.getOptionValue("dataset");
             if (dataset != null) {
                 this.dataset = dataset;
+            }
+
+            String embeddings = line.getOptionValue("embeddings");
+            if (embeddings != null) {
+                this.embeddings = embeddings;
             }
         } catch (ParseException e) {
             //If parameters are wrong — print help

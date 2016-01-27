@@ -33,3 +33,8 @@ lorenzo.semeval:
   size: 19721
   type: labeledsentences
   compression: GZ
+lorenzo.rnn:
+  location: http://futuro.media/data/lorenzo.rnn.gz
+  size: 1143144
+  type: labeledsentences
+  compression: GZ

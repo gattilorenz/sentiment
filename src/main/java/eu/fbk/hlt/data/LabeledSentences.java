@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Dataset that is just sentence with an integer label
@@ -93,6 +94,27 @@ public class LabeledSentences extends Dataset implements Closeable {
                 return null;
             }
             return new Sentence(elements[0], elements[1]);
+        }
+    }
+
+    public static class RemappedLabeledSentences extends LabeledSentences {
+        private Map<String, String> mappings;
+
+        public RemappedLabeledSentences(Map<String, String> mappings, DatasetMetaInfo info) throws URISyntaxException, IOException {
+            super(info);
+            this.mappings = mappings;
+        }
+
+        @Override
+        public Sentence readNext() {
+            Sentence sentence = super.readNext();
+            if (sentence == null) {
+                return null;
+            }
+            if (mappings.containsKey(sentence.label)) {
+                sentence.label = mappings.get(sentence.label);
+            }
+            return sentence;
         }
     }
 }

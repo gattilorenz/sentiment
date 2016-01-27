@@ -13,9 +13,7 @@ import eu.fbk.hlt.data.WordVectors;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * A module that resolves core dependencies for the models
@@ -23,12 +21,14 @@ import java.util.Properties;
  * @author Yaroslav Nechaev (remper@me.com)
  */
 public class DatasetProvider extends AbstractModule {
-    protected String dataset;
-    protected String embeddings;
+    protected final String dataset;
+    protected final String embeddings;
+    protected final boolean threeClass;
 
     public DatasetProvider(SentimentParameters params) {
         dataset = params.dataset;
         embeddings = params.embeddings;
+        threeClass = params.threeClass;
     }
 
     @Override
@@ -39,13 +39,15 @@ public class DatasetProvider extends AbstractModule {
     @Provides
     @Named("classes")
     List<String> provideClasses() {
-        return new ArrayList<String>() {{
-            add("0");
-            add("1");
-            add("2");
-            add("3");
-            add("4");
-        }};
+        List<String> classes = new ArrayList<>();
+        classes.add("1");
+        classes.add("2");
+        classes.add("3");
+        if (!threeClass) {
+            classes.add("0");
+            classes.add("4");
+        }
+        return classes;
     }
 
     @Provides
@@ -78,6 +80,13 @@ public class DatasetProvider extends AbstractModule {
         Dataset dataset = repository.load(this.dataset);
         if (!(dataset instanceof LabeledSentences)) {
             throw new Exception("The instantiated dataset is of the wrong type");
+        }
+        //Remap dataset to three classes
+        if (threeClass) {
+            Map<String, String> mappings = new HashMap<>();
+            mappings.put("0", "1");
+            mappings.put("4", "3");
+            dataset = new LabeledSentences.RemappedLabeledSentences(mappings, dataset.getInfo());
         }
         return (LabeledSentences) dataset;
     }

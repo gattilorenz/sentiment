@@ -35,6 +35,7 @@ public class CNNTang2015 extends AbstractModel {
 
     public static final double RESULT_THESHOLD = 0.001;
     public static final double LEARNING_RATE = 0.03;
+    public static final double RND_BASE = -0.01;
 
     protected LabeledSentences dataset;
     protected ArrayList<Pipeline> net;
@@ -50,13 +51,12 @@ public class CNNTang2015 extends AbstractModel {
         this.net = new ArrayList<>();
         //Create a set of layers for each of the window sizes
         Pipeline connect = new Pipeline(new MultiConnectLayer(new int[]{lookupDim, lookupDim, lookupDim}));
-        LinearLayer linear = new LinearLayer(lookupDim, 5);
-        double rndBase = -0.01;
-        linear.randomize(new Random(), -1.0 * rndBase, rndBase);
+        LinearLayer linear = new LinearLayer(lookupDim, classes.size());
+        linear.randomize(new Random(), -1.0 * RND_BASE, RND_BASE);
         softmax = connect
             .after(new AverageLayer(lookupDim*3, lookupDim))
             .after(linear)
-            .after(new SoftmaxLayer(5));
+            .after(new SoftmaxLayer(classes.size()));
 
         for (int windowSize = 1; windowSize <= 3; windowSize++) {
             Pipeline net = new Pipeline(new ConvolutionLayer(windowSize, wordDim, lookupDim));

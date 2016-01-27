@@ -38,6 +38,7 @@ public abstract class AbstractModel {
     List<SentenceModelListener> sentenceModelListeners = new ArrayList<>();
 
     public AbstractModel(List<String> classes, WordVectors embeddings, AnnotationPipeline pipeline) {
+        logger.info(String.format("Classes: %d. Embeddings dim: %s", classes.size(), embeddings.getDim()));
         this.embeddings = embeddings;
         this.pipeline = pipeline;
         this.classes = classes;
@@ -52,7 +53,7 @@ public abstract class AbstractModel {
         Stopwatch watch = Stopwatch.start();
         Random testRnd = new Random();
         LabeledSentences.Sentence sentence;
-        logger.info("Starting training with dataset \""+dataset.getInfo().name+"\"");
+        logger.info("Starting training with dataset \""+dataset.getInfo().name+"\"@"+dataset.getClass().getSimpleName());
         while ((sentence = dataset.readNext()) != null) {
             //Add some of the samples to test set
             if (testRnd.nextDouble() <= DEFAULT_TEST_SPLIT) {
@@ -70,7 +71,7 @@ public abstract class AbstractModel {
         }
 
         logger.info("Evaluating model....");
-        logger.info(evaluate(testInput).stats());
+        logger.info(evaluate(testInput).stats(false));
     }
 
     /**
